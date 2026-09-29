@@ -1,0 +1,30 @@
+const memories = [
+  ['Summer in Italy', '2024', '#9b5b42', 'italy'],
+  ['Alpine Days', '2023', '#536a65', 'mountains'],
+  ['By the Sea', '2025', '#517583', 'coast'],
+  ['Our Little World', '2022', '#b9996b', 'lake'],
+  ['Into the Green', '2024', '#677653', 'forest'],
+  ['Under the Stars', '2023', '#485067', 'stars'],
+  ['A Weekend Away', '2025', '#b39378', 'lake'],
+  ['The Long Way Home', '2022', '#916b50', 'mountains'],
+  ['Slow Sundays', '2024', '#b3a38a', 'forest'],
+  ['Coastal Mornings', '2023', '#6d8885', 'coast'],
+  ['Postcards from Italy', '2025', '#a56e59', 'italy'],
+  ['Family Adventures', '2024', '#778169', 'lake'],
+  ['Little Celebrations', '2023', '#9a7370', 'italy'],
+  ['Where We Wandered', '2022', '#596b73', 'mountains'],
+  ['Golden Afternoons', '2025', '#bc9960', 'forest'],
+  ['Just the Two of Us', '2024', '#94766c', 'coast'],
+  ['The First Journey', '2021', '#74755d', 'mountains'],
+  ['Days to Remember', '2023', '#b3997e', 'lake'],
+  ['A Sky Full of Stars', '2025', '#4b5163', 'stars'],
+  ['Our Favourite Places', '2024', '#677a71', 'forest'],
+  ['The Summer We Stayed', '2022', '#b08465', 'coast'],
+  ['Far from Home', '2023', '#8b6551', 'italy'],
+  ['Along the Lake', '2025', '#687e85', 'lake'],
+  ['Together, Always', '2024', '#a58779', 'forest'],
+];
+
+export const albums = memories.map(([title, year, color, photo], id) => ({
+  id, title, year, color, photo: `/memories/${photo}.jpg`,
+}));
