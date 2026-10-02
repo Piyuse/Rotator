@@ -18,6 +18,7 @@ export function createMemoryRoom(container, albums, options) {
   const textures = new Set();
   const albumModels = [];
   let disposed = false;
+  let active = true;
   let seed = 51;
   const random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -100,8 +101,26 @@ export function createMemoryRoom(container, albums, options) {
     const image = new Image(); image.onload = () => { photos.set(path, image); resolve(); }; image.onerror = resolve; image.src = path;
   }));
   const loader = new THREE.TextureLoader();
-  const forest = loader.load('/memories/forest.jpg'); textures.add(forest); forest.colorSpace = THREE.SRGBColorSpace;
-  const view = new THREE.Mesh(new THREE.PlaneGeometry(5.38, 4.86), new THREE.MeshBasicMaterial({ map: forest, color: 0xe4e5ce }));
+  let sea;
+  imageLoads.push(new Promise(resolve => {
+    sea = loader.load('/memories/window-sea.png', texture => {
+      // Crop to the window's aspect ratio rather than stretching the coastline or birds.
+      const imageAspect = texture.image.width / texture.image.height;
+      const windowAspect = 5.38 / 4.86;
+      if (imageAspect > windowAspect) {
+        texture.repeat.x = windowAspect / imageAspect;
+        texture.offset.x = (1 - texture.repeat.x) / 2;
+      } else {
+        texture.repeat.y = imageAspect / windowAspect;
+        texture.offset.y = (1 - texture.repeat.y) / 2;
+      }
+      resolve();
+    }, undefined, resolve);
+  }));
+  textures.add(sea);
+  sea.colorSpace = THREE.SRGBColorSpace;
+  sea.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  const view = new THREE.Mesh(new THREE.PlaneGeometry(5.38, 4.86), new THREE.MeshBasicMaterial({ map: sea, toneMapped: false }));
   view.position.set(0, 4.58, -1.19); room.add(view);
   for (const x of [-2.67, 2.67]) box(.17, 5, .4, x, 4.57, -.86, ivory);
   for (const y of [2.17, 7.02]) box(5.5, .19, .44, 0, y, -.84, ivory);
@@ -203,7 +222,6 @@ export function createMemoryRoom(container, albums, options) {
     }
   }
   plant(-4.48, 7.24, -.12, .85); plant(4.46, 7.24, -.22, .95);
-  plant(-1.87, 2.25, -.47, .7);
 
   function frame(x, y, z, width, height, photo) {
     const frameGroup = new THREE.Group(); frameGroup.position.set(x, y, z); room.add(frameGroup);
@@ -340,12 +358,13 @@ export function createMemoryRoom(container, albums, options) {
   }
   function clearHighlight() { hovered = null; tapped = null; clearTimeout(tapTimer); options.onHover(null); }
   listen('pointerdown', event => {
-    if (event.button !== 0 || drag || event.target.closest('button,a,input,select,textarea')) return;
+    if (!active || event.button !== 0 || drag || event.target.closest('button,a,input,select,textarea')) return;
     drag = { id: event.pointerId, startX: event.clientX, startY: event.clientY, x: event.clientX, y: event.clientY, moved: false, time: performance.now() };
     velocity.x = velocity.y = 0; clearHighlight();
     canvas.setPointerCapture(event.pointerId); canvas.style.cursor = 'grabbing';
   });
   listen('pointermove', event => {
+    if (!active) return;
     if (drag && event.pointerId === drag.id) {
       const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
       if (Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > 5) drag.moved = true;
@@ -356,10 +375,11 @@ export function createMemoryRoom(container, albums, options) {
       drag.x = event.clientX; drag.y = event.clientY; drag.time = performance.now();
     } else if (event.pointerType !== 'touch' && !event.target.closest('button')) {
       hovered = pick(event); options.onHover(hovered?.userData.album || null);
+      canvas.style.cursor = hovered ? 'pointer' : 'grab';
     }
   });
   listen('pointerup', event => {
-    if (!drag || drag.id !== event.pointerId) return;
+    if (!active || !drag || drag.id !== event.pointerId) return;
     const clicked = !drag.moved;
     if (performance.now() - drag.time > 100) velocity.x = velocity.y = 0;
     drag = null;
@@ -367,8 +387,7 @@ export function createMemoryRoom(container, albums, options) {
     canvas.style.cursor = 'grab';
     if (clicked) {
       velocity.x = velocity.y = 0; tapped = pick(event);
-      options.onHover(tapped?.userData.album || null);
-      clearTimeout(tapTimer); tapTimer = setTimeout(() => { tapped = null; options.onHover(null); }, 2400);
+      if (tapped) options.onSelect?.(tapped.userData.album);
     }
   });
   function cancelDrag() { drag = null; velocity.x = velocity.y = 0; canvas.style.cursor = 'grab'; }
@@ -378,7 +397,7 @@ export function createMemoryRoom(container, albums, options) {
   const onBlur = () => { cancelDrag(); clearHighlight(); };
   window.addEventListener('blur', onBlur);
   listen('wheel', event => {
-    if (event.ctrlKey) return; // Preserve browser/pinch zoom accessibility.
+    if (!active || event.ctrlKey) return; // Preserve browser/pinch zoom accessibility.
     event.preventDefault(); clearHighlight(); velocity.x = velocity.y = 0;
     const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? innerHeight : 1;
     const horizontal = event.shiftKey ? event.deltaY : event.deltaX;
@@ -388,7 +407,7 @@ export function createMemoryRoom(container, albums, options) {
 
   let previous = performance.now();
   renderer.setAnimationLoop(now => {
-    const dt = Math.min((now - previous) / 1000, .05); previous = now; if (document.hidden) return;
+    const dt = Math.min((now - previous) / 1000, .05); previous = now; if (document.hidden || !active) return;
     if (!drag && !reducedMotion) { move(velocity.x * dt, velocity.y * dt); velocity.x *= Math.exp(-9 * dt); velocity.y *= Math.exp(-9 * dt); }
     const damping = drag ? 28 : 11;
     room.rotation.y = reducedMotion ? target.yaw : THREE.MathUtils.damp(room.rotation.y, target.yaw, damping, dt);
@@ -401,6 +420,10 @@ export function createMemoryRoom(container, albums, options) {
     renderer.render(scene, camera);
   });
   return {
+    setActive: value => {
+      active = value;
+      cancelDrag(); clearHighlight();
+    },
     move: (x, y) => { velocity.x = velocity.y = 0; clearHighlight(); move(x, y); },
     reset: () => { Object.assign(target, { yaw: -.08, panX: compactView ? 2.3 : 0, panY: 0 }); velocity.x = velocity.y = 0; clearHighlight(); },
     dispose: () => {
