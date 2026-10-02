@@ -27,7 +27,7 @@ export function createAlbumReader({ onOpen, onClose }) {
   dialog.tabIndex = -1;
   dialog.setAttribute('aria-labelledby', 'reader-title');
   dialog.innerHTML = `
-    <header class="reader-header"><button class="reader-back" aria-label="Close album and return to the room">${chevron}<span>Back to the room</span></button><div class="reader-heading"><span class="reader-eyebrow">A COLLECTION OF MOMENTS</span><h1 id="reader-title"></h1></div><span class="reader-year"></span></header>
+    <header class="reader-header"><button class="reader-back" aria-label="Close album and return to the collection">${chevron}<span>Back to collection</span></button><div class="reader-heading"><span class="reader-eyebrow">A COLLECTION OF MOMENTS</span><h1 id="reader-title"></h1></div><span class="reader-year"></span></header>
     <section class="reading-stage" aria-label="Open photo album. Swipe left for the next pages and right for the previous pages.">
       <div class="album-book">
         <div class="book-board"></div><div class="paper-stack"></div>
@@ -199,3 +199,4 @@ export function createAlbumReader({ onOpen, onClose }) {
     close,
   };
 }
+
