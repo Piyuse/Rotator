@@ -1,6 +1,7 @@
 # Stills — Life, collected.
 
 A frontend-only Three.js memory album gallery inspired by the supplied Alinma motion-design reference: near-black and sage palette, oversized serif typography, and a tightly packed diagonal ribbon of substantial linen albums. The animation follows the supplied WhatsApp video: upright books rise and settle in a travelling wave, with an elevated orthographic camera.
+This is one of the sample designs
 
 ## Run
 
