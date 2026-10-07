@@ -28,36 +28,48 @@ export function createAlbumGallery(container, albums, options) {
   let resumeWaveAt = 0;
   const wrap = (index, length = list.length) => ((index % length) + length) % length;
   const linenColor = album => `#${album.color.slice(1).match(/../g).map(channel => Math.round(parseInt(channel, 16) * .8).toString(16).padStart(2, '0')).join('')}`;
-  const clothCanvas = document.createElement('canvas'); clothCanvas.width = clothCanvas.height = 128;
-  const grain = clothCanvas.getContext('2d'); grain.fillStyle = '#888'; grain.fillRect(0, 0, 128, 128);
-  for (let y = 0; y < 128; y += 2) { grain.fillStyle = y % 4 ? '#aaa' : '#777'; grain.fillRect(0, y, 128, 1); }
-  const linen = new THREE.CanvasTexture(clothCanvas); linen.wrapS = linen.wrapT = THREE.RepeatWrapping; linen.repeat.set(4, 6); textures.push(linen);
   function mesh(w, h, d, material, group, x = 0, z = 0, radius = .035) {
     const item = new THREE.Mesh(new RoundedBoxGeometry(w, h, d, 2, radius), material);
     item.position.set(x, 0, z); item.castShadow = true; item.receiveShadow = true; group.add(item); return item;
   }
   function coverTexture(album) {
-    const surface = document.createElement('canvas'); surface.width = 1024; surface.height = 1408;
+    const surface = document.createElement('canvas'); surface.width = 1200; surface.height = 760;
     const ctx = surface.getContext('2d');
     const texture = new THREE.CanvasTexture(surface); texture.colorSpace = THREE.SRGBColorSpace;
     texture.anisotropy = renderer.capabilities.getMaxAnisotropy(); textures.push(texture);
     function paint(photo) {
-      ctx.fillStyle = linenColor(album); ctx.fillRect(0, 0, 1024, 1408);
-      for (let y = 0; y < 1408; y += 3) { ctx.fillStyle = y % 2 ? '#ffffff08' : '#0000000a'; ctx.fillRect(0, y, 1024, 1); }
-      ctx.fillStyle = '#0002'; ctx.fillRect(0, 0, 38, 1408);
-      ctx.strokeStyle = '#f0dfb855'; ctx.lineWidth = 2; ctx.strokeRect(65, 48, 905, 1310);
-      ctx.textAlign = 'center'; ctx.fillStyle = '#fff7e8'; ctx.font = '500 23px Arial'; ctx.fillText('S T I L L S   /   M E M O R I E S', 518, 115);
-      const words = album.title.split(' '), lines = []; let line = ''; ctx.font = '64px Georgia';
-      for (const word of words) { const next = `${line} ${word}`.trim(); if (ctx.measureText(next).width > 790 && line) { lines.push(line); line = word; } else line = next; } lines.push(line);
-      lines.forEach((text, i) => ctx.fillText(text, 518, 235 - (lines.length - 1) * 34 + i * 77));
-      ctx.fillStyle = '#f5eedc'; ctx.fillRect(101, 365, 830, 748);
+      ctx.fillStyle = linenColor(album); ctx.fillRect(0, 0, 1200, 760);
+      const wash = ctx.createLinearGradient(0, 0, 1200, 760);
+      wash.addColorStop(0, '#ffffff34'); wash.addColorStop(.46, '#ffffff00'); wash.addColorStop(1, '#00000037');
+      ctx.fillStyle = wash; ctx.fillRect(0, 0, 1200, 760);
+      ctx.fillStyle = '#ffffff14'; ctx.beginPath(); ctx.arc(1030, -50, 430, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#ffffff19'; ctx.lineWidth = 2;
+      for (let radius = 330; radius < 620; radius += 62) { ctx.beginPath(); ctx.arc(995, 43, radius, .35, 2.18); ctx.stroke(); }
+      ctx.fillStyle = '#fff8ea'; ctx.textAlign = 'left';
+      ctx.font = '52px Georgia'; ctx.fillText('stills.', 78, 105);
+      ctx.font = '20px Arial'; ctx.letterSpacing = '3px'; ctx.fillText('M E M O R Y   C A R D', 78, 151);
+      ctx.letterSpacing = '0px';
+      // A small metallic inlay and contactless mark make the object read as a card.
+      const chip = ctx.createLinearGradient(85, 260, 245, 370);
+      chip.addColorStop(0, '#fff0bf'); chip.addColorStop(.48, '#b9995f'); chip.addColorStop(1, '#eadbb0');
+      ctx.fillStyle = chip; ctx.beginPath(); ctx.roundRect(83, 272, 151, 108, 15); ctx.fill();
+      ctx.strokeStyle = '#685d46'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.roundRect(83, 272, 151, 108, 15); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(158, 274); ctx.lineTo(158, 378); ctx.moveTo(85, 326); ctx.lineTo(232, 326); ctx.stroke();
+      ctx.strokeStyle = '#fff8eac9'; ctx.lineWidth = 5;
+      for (let radius = 16; radius <= 43; radius += 13) { ctx.beginPath(); ctx.arc(275, 326, radius, -.8, .8); ctx.stroke(); }
+      ctx.fillStyle = '#f7e5c3'; ctx.fillRect(321, 173, 352, 346);
       if (photo) {
-        const width = 804, height = 722, scale = Math.max(width / photo.width, height / photo.height);
+        const width = 332, height = 326, scale = Math.max(width / photo.width, height / photo.height);
         const sw = width / scale, sh = height / scale;
-        ctx.drawImage(photo, (photo.width - sw) / 2, (photo.height - sh) / 2, sw, sh, 114, 378, width, height);
+        ctx.drawImage(photo, (photo.width - sw) / 2, (photo.height - sh) / 2, sw, sh, 331, 183, width, height);
       }
-      ctx.fillStyle = '#fff7e8'; ctx.font = '48px Georgia'; ctx.fillText(album.year, 518, 1213);
-      ctx.font = '22px Arial'; ctx.fillText('A LITTLE PIECE OF YOUR LIFE', 518, 1290); texture.needsUpdate = true;
+      ctx.fillStyle = '#fff8ea'; ctx.textAlign = 'left'; ctx.font = '56px Georgia';
+      const words = album.title.split(' '), lines = []; let line = '';
+      for (const word of words) { const next = `${line} ${word}`.trim(); if (ctx.measureText(next).width > 520 && line) { lines.push(line); line = word; } else line = next; } lines.push(line);
+      lines.slice(0, 2).forEach((text, i) => ctx.fillText(text, 83, 535 + i * 68, 530));
+      ctx.fillStyle = '#f7e8d1'; ctx.font = '25px Arial'; ctx.letterSpacing = '4px'; ctx.fillText(album.year, 85, 696);
+      ctx.letterSpacing = '0px'; texture.needsUpdate = true;
     }
     paint();
     const ready = new Promise(resolve => { const photo = new Image(); photo.onload = () => { if (!disposed) paint(photo); resolve(); }; photo.onerror = resolve; photo.src = album.photo; });
@@ -65,16 +77,11 @@ export function createAlbumGallery(container, albums, options) {
   }
   const loads = albums.map(album => {
     const model = new THREE.Group(); model.userData.album = album; scene.add(model); models.push(model);
-    const cloth = new THREE.MeshStandardMaterial({ color: linenColor(album), roughness: .77, bumpMap: linen, bumpScale: .012 });
-    mesh(1.96, 2.73, .24, new THREE.MeshStandardMaterial({ color: 0xeee6d2, roughness: .92 }), model, .02);
-    mesh(2.05, 2.84, .045, cloth, model, 0, -.151, .02);
-    mesh(2.05, 2.84, .045, cloth, model, 0, .151, .02);
-    mesh(.12, 2.84, .35, cloth, model, -.976, 0, .035);
+    const cardMaterial = new THREE.MeshStandardMaterial({ color: linenColor(album), metalness: .12, roughness: .46 });
+    mesh(4.42, 2.8, .075, cardMaterial, model, 0, 0, .036);
     const { texture, ready } = coverTexture(album);
-    const front = new THREE.Mesh(new THREE.PlaneGeometry(2.02, 2.81), new THREE.MeshBasicMaterial({ map: texture, toneMapped: false }));
-    front.position.z = .177; model.add(front);
-    const lineMat = new THREE.MeshStandardMaterial({ color: 0xc3b8a1, roughness: 1 });
-    for (let z = -.1; z < .12; z += .032) mesh(.003, 2.68, .003, lineMat, model, 1.003, z, .001);
+    const front = new THREE.Mesh(new THREE.PlaneGeometry(4.29, 2.67), new THREE.MeshBasicMaterial({ map: texture, toneMapped: false, side: THREE.DoubleSide }));
+    front.position.z = .04; model.add(front);
     model.userData.lift = 0;
     model.traverse(child => { if (child.isMesh) child.userData.albumModel = model; }); return ready;
   });
@@ -90,7 +97,7 @@ export function createAlbumGallery(container, albums, options) {
     camera.top = halfHeight; camera.bottom = -halfHeight;
     camera.position.set(0, 8, 17); camera.lookAt(0, .5, 0);
     camera.updateProjectionMatrix(); renderer.setSize(width, height);
-    sweepSpan = Math.min(7.5, Math.max(2.5, camera.right / .68 - 2));
+    sweepSpan = Math.min(7.5, Math.max(2.5, camera.right / .54 - 2));
   }
   const observer = new ResizeObserver(resize); observer.observe(container); resize(); announce();
   const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
@@ -153,14 +160,13 @@ export function createAlbumGallery(container, albums, options) {
       const index = list.indexOf(model.userData.album); model.visible = index !== -1; if (!model.visible) return;
       let offset = wrap(index - current + list.length / 2) - list.length / 2;
       if (list.length === 1) offset = 0;
-      // Parallel books follow a diagonal X/Z path. Their covers stay upright;
-      // a soft moving crest raises neighbouring books in a continuous cascade.
-      // Spacing along the cover normal exceeds the .35-unit book thickness.
+      // Thin cards follow the diagonal reference arrangement. A moving crest
+      // raises nearby cards without a spine or page-block silhouette.
       const influence = Math.exp(-Math.pow((offset - waveCenter) / 1.55, 2));
       const lift = (motionEnabled || hovered || drag ? influence * 1.18 : 0);
       model.userData.lift = reducedMotion ? lift : THREE.MathUtils.damp(model.userData.lift, lift, 10, dt);
-      model.position.set(offset * .68, -.34 + model.userData.lift, offset * .44);
-      model.rotation.set(0, .62 + model.userData.lift * .035, 0);
+      model.position.set(offset * .54, -.34 + model.userData.lift, offset * .29);
+      model.rotation.set(0, 1.07 + model.userData.lift * .035, 0);
       model.scale.setScalar(1);
     });
     renderer.render(scene, camera);
